@@ -474,7 +474,7 @@ app.get('/widget.css', (req, res) => {
   `);
 });
 
-// ===== WIDGET JS ROUTE (UPDATED WITH BETTER ERROR HANDLING) =====
+// ===== WIDGET JS ROUTE (FIXED - handles numeric product IDs properly) =====
 app.get('/widget.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
@@ -491,7 +491,7 @@ app.get('/widget.js', (req, res) => {
 
       function getProductId() {
         const container = document.getElementById('nefhara-reviews-widget');
-        if (!container) return null;
+        if (!container) return 'all';
         const productId = container.dataset.product || window.NEFHARA_PRODUCT_ID || 'all';
         return productId;
       }
@@ -504,24 +504,23 @@ app.get('/widget.js', (req, res) => {
         }
 
         const productId = getProductId();
-        if (!productId) {
-          container.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;font-size:1.2rem;">❌ Product ID not found</div>';
-          return;
-        }
+        console.log('📡 Product ID:', productId);
+        console.log('📡 API URL:', \`\${API_URL}/api/reviews/\${productId}?count=20\`);
 
         container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:1.2rem;color:#6b7280;">⏳ Loading reviews...</div>';
 
         try {
           const url = \`\${API_URL}/api/reviews/\${productId}?count=20\`;
-          console.log('📡 Fetching reviews from:', url);
           
           const response = await fetch(url);
+          console.log('📡 Response status:', response.status);
           
           if (!response.ok) {
             throw new Error(\`HTTP error! status: \${response.status}\`);
           }
           
           const data = await response.json();
+          console.log('📡 Data received:', data);
 
           if (!data.success) {
             throw new Error('API returned error');
@@ -601,11 +600,9 @@ app.get('/widget.js', (req, res) => {
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', loadReviews);
       } else {
-        // DOM already loaded, load immediately
         setTimeout(loadReviews, 100);
       }
 
-      // Make loadReviews available globally for the refresh button
       window.loadReviews = loadReviews;
     })();
   `);
@@ -613,15 +610,18 @@ app.get('/widget.js', (req, res) => {
 
 // ===== API ROUTES =====
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', reviews: allReviews.length, timestamp: new Date().toISOString() });
 });
 
+// Clear reviews
 app.post('/api/clear-reviews', (req, res) => {
   allReviews = [];
   res.json({ success: true, message: 'All reviews cleared' });
 });
 
+// Generate bulk reviews
 app.post('/api/generate-bulk', async (req, res) => {
   try {
     const { country = 'Morocco', count = 500 } = req.body;
@@ -637,25 +637,44 @@ app.post('/api/generate-bulk', async (req, res) => {
   }
 });
 
+// Get reviews for a product (supports numeric and string IDs)
 app.get('/api/reviews/:productId', (req, res) => {
   try {
+    const productId = req.params.productId;
     const count = parseInt(req.query.count) || 20;
-    const randomReviews = shuffleArray(allReviews).slice(0, count);
+    
+    console.log(`📡 Getting reviews for product: ${productId}`);
+    
+    // If productId is 'all', return all reviews
+    let reviewsToUse = allReviews;
+    if (productId !== 'all') {
+      // Try to match by productId (could be string or number)
+      reviewsToUse = allReviews.filter(r => String(r.productId) === String(productId));
+    }
+    
+    const randomReviews = shuffleArray(reviewsToUse).slice(0, count);
+    
+    console.log(`📡 Found ${randomReviews.length} reviews out of ${allReviews.length} total`);
+    
     res.json({
       success: true,
       displayed: randomReviews.length,
       totalAvailable: allReviews.length,
+      productId: productId,
       reviews: randomReviews
     });
   } catch (error) {
+    console.error('❌ Error getting reviews:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
+// Get all reviews (admin)
 app.get('/api/reviews', (req, res) => {
   res.json({ total: allReviews.length, reviews: allReviews });
 });
 
+// Get products from Shopify
 app.get('/api/products', async (req, res) => {
   try {
     if (!shopify) { return res.status(500).json({ error: 'Shopify not configured' }); }
@@ -666,6 +685,7 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
+// Generate reviews for specific product
 app.post('/api/generate-reviews', async (req, res) => {
   try {
     const { productId, country = 'Morocco', count = 20 } = req.body;
@@ -684,6 +704,7 @@ app.post('/api/generate-reviews', async (req, res) => {
   }
 });
 
+// Generate widget code
 app.post('/api/generate-widget', (req, res) => {
   const { productId, productTitle } = req.body;
   const widgetCode = `
@@ -703,5 +724,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 NEFHARA Reviews Server running on http://localhost:${PORT}`);
   console.log(`🛒 Shopify: ${SHOPIFY_SHOP_URL || 'Not configured'}`);
   console.log(`📋 Admin Dashboard: http://localhost:${PORT}/embed.html`);
+  console.log(`📋 Total Reviews: ${allReviews.length}`);
   console.log(`\n✅ Ready!\n`);
 });
