@@ -26,35 +26,41 @@ if (SHOPIFY_API_KEY && SHOPIFY_ACCESS_TOKEN && SHOPIFY_SHOP_URL) {
 
 // ===== REVIEW STORAGE =====
 let allReviews = [];
-let productCache = {}; // Cache product images
+let productCache = {};
 
-// ===== FETCH PRODUCT IMAGES FROM SHOPIFY =====
-async function getProductImage(productId) {
+// ===== FETCH REAL PRODUCT IMAGES FROM SHOPIFY =====
+async function fetchProductsWithImages() {
+  if (!shopify) {
+    console.log('⚠️ Shopify not configured, using fallback images');
+    return [
+      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/JPG_Le_Beau_Paradise_Garden.jpg" },
+      { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" },
+      { id: 15841953907065, title: "Acqua di Giò", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Acqua_di_Gio.jpg" }
+    ];
+  }
+  
   try {
-    // Check cache first
-    if (productCache[productId]) {
-      return productCache[productId];
-    }
+    const products = await shopify.product.list({
+      limit: 250,
+      fields: 'id,title,images'
+    });
     
-    if (!shopify) {
-      return null;
-    }
+    console.log(`🛒 Found ${products.length} products from Shopify`);
     
-    const product = await shopify.product.get(productId);
-    const image = product.images && product.images.length > 0 ? product.images[0].src : null;
-    
-    // Cache the image
-    productCache[productId] = image;
-    return image;
+    return products.map(p => ({
+      id: p.id,
+      title: p.title,
+      image: p.images && p.images.length > 0 ? p.images[0].src : null
+    }));
   } catch (error) {
-    console.error('Error fetching product image:', error.message);
-    return null;
+    console.error('❌ Error fetching products:', error.message);
+    return [];
   }
 }
 
-// ===== GENERATE MOCK REVIEWS WITH REAL PRODUCT IMAGES =====
+// ===== GENERATE REVIEWS WITH REAL PRODUCT IMAGES =====
 async function generateMockReviews(count = 500) {
-  console.log(`\n📝 Generating ${count} reviews...`);
+  console.log(`\n📝 Generating ${count} reviews with product images...`);
   
   const firstNames = ['Khadija', 'Youssef', 'Fatima', 'Mohamed', 'Aicha', 'Omar', 'Nadia', 'Karim', 'Samira', 'Hassan', 'Zineb', 'Tariq', 'Salma', 'Nisrine', 'Imane', 'Adil', 'Rachid', 'Latifa', 'Mehdi', 'Sofia', 'Hamza', 'Leila'];
   const lastNames = ['El Hachimi', 'Benali', 'Alami', 'Fassi', 'Meknassi', 'Tazi', 'Berrada', 'Lahlou', 'Benjelloun', 'Kabbaj', 'Zniber', 'Mernissi', 'Bennani', 'El Alaoui', 'Benchekroun', 'Slaoui', 'Cherkaoui'];
@@ -67,43 +73,27 @@ async function generateMockReviews(count = 500) {
     'ما شاء الله، سلعة نقية وجودة عالية. الخدمة كانت مزيانة والتوصيل سريع.'
   ];
 
-  const reviews = [];
+  // Get real products with images
+  const products = await fetchProductsWithImages();
   
-  // Get products from Shopify
-  let products = [];
-  try {
-    if (shopify) {
-      const shopifyProducts = await shopify.product.list({
-        limit: 250,
-        fields: 'id,title,images'
-      });
-      products = shopifyProducts.map(p => ({
-        id: p.id,
-        title: p.title,
-        image: p.images && p.images.length > 0 ? p.images[0].src : null
-      }));
-      console.log(`🛒 Found ${products.length} products from Shopify`);
-    } else {
-      // Fallback mock products
-      products = [
-        { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/JPG_Le_Beau_Paradise_Garden.jpg" },
-        { id: 15841953907063, title: "Armani Stronger With You", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Armani_Stronger_With_You.jpg" },
-        { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" },
-        { id: 15841953907065, title: "Acqua di Giò", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Acqua_di_Gio.jpg" }
-      ];
-      console.log(`📦 Using ${products.length} mock products`);
-    }
-  } catch (error) {
-    console.error('❌ Error fetching products:', error.message);
-    products = [
-      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: null },
-      { id: 15841953907063, title: "Armani Stronger With You", image: null }
-    ];
+  if (products.length === 0) {
+    console.log('⚠️ No products found, using fallback');
+    products.push(
+      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://picsum.photos/seed/1/400/400" },
+      { id: 15841953907064, title: "Lancôme Idôle", image: "https://picsum.photos/seed/2/400/400" }
+    );
   }
+  
+  console.log(`📦 Using ${products.length} products`);
 
-  // Generate reviews
+  const reviews = [];
+
   for (let i = 0; i < count; i++) {
     const product = products[Math.floor(Math.random() * products.length)];
+    
+    // Use the product's real image, or a placeholder if null
+    const productImage = product.image || `https://picsum.photos/seed/${product.id}/400/400`;
+    
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     const fullName = `${firstName} ${lastName}`;
@@ -111,9 +101,6 @@ async function generateMockReviews(count = 500) {
     const stars = Math.random() < 0.7 ? 5 : 4;
     const text = texts[Math.floor(Math.random() * texts.length)];
     const expression = expressions[Math.floor(Math.random() * expressions.length)];
-    
-    // Use the product's actual image
-    const productImage = product.image || `https://picsum.photos/seed/${i + 1}/400/400`;
     
     reviews.push({
       id: `review_${Date.now()}_${i}`,
@@ -126,7 +113,7 @@ async function generateMockReviews(count = 500) {
       title: stars === 5 ? '⭐ Excellent!' : '✨ Very Good!',
       text: `${text} ${expression}`,
       date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      productImage: productImage, // This is the product's actual image
+      productImage: productImage,
       helpful: Math.floor(Math.random() * 40) + 5,
       productId: product.id,
       productTitle: product.title
@@ -137,6 +124,7 @@ async function generateMockReviews(count = 500) {
     }
   }
   
+  console.log(`✅ All ${reviews.length} reviews generated!`);
   return reviews;
 }
 
@@ -151,12 +139,10 @@ function shuffleArray(array) {
 
 // ===== ROUTES =====
 
-// Root
 app.get('/', (req, res) => {
   res.send('✅ NEFHARA Reviews Server is running!');
 });
 
-// Dashboard
 app.get('/embed.html', (req, res) => {
   res.send(`<!DOCTYPE html>
 <html>
@@ -399,18 +385,17 @@ app.get('/widget.js', (req, res) => {
 
 // ===== API ROUTES =====
 
-// Health
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', reviews: allReviews.length });
 });
 
-// Clear reviews
 app.post('/api/clear-reviews', (req, res) => {
   allReviews = [];
+  productCache = {};
+  console.log('🗑️ All reviews cleared!');
   res.json({ success: true, message: 'All reviews cleared' });
 });
 
-// Generate bulk reviews
 app.post('/api/generate-bulk', async (req, res) => {
   try {
     const count = req.body.count || 500;
@@ -422,7 +407,6 @@ app.post('/api/generate-bulk', async (req, res) => {
   }
 });
 
-// Get reviews for a specific product
 app.get('/api/reviews/:productId', (req, res) => {
   try {
     const productId = req.params.productId;
@@ -449,18 +433,16 @@ app.get('/api/reviews/:productId', (req, res) => {
   }
 });
 
-// Get all reviews (admin)
 app.get('/api/reviews', (req, res) => {
   res.json({ total: allReviews.length, reviews: allReviews });
 });
 
-// Get products from Shopify
 app.get('/api/products', async (req, res) => {
   try {
     if (!shopify) { 
       return res.json([
-        { id: 15841953907062, title: "JPG Le Beau Paradise Garden" },
-        { id: 15841953907063, title: "Armani Stronger With You" }
+        { id: 15841953907062, title: "JPG Le Beau Paradise Garden", images: [{ src: "https://picsum.photos/seed/1/400/400" }] },
+        { id: 15841953907064, title: "Lancôme Idôle", images: [{ src: "https://picsum.photos/seed/2/400/400" }] }
       ]);
     }
     const products = await shopify.product.list({ limit: 250, fields: 'id,title,images' });
@@ -470,7 +452,6 @@ app.get('/api/products', async (req, res) => {
   }
 });
 
-// Generate widget code
 app.post('/api/generate-widget', (req, res) => {
   const { productId, productTitle } = req.body;
   const widgetCode = `
