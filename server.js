@@ -8,12 +8,9 @@ const PORT = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// Shopify credentials
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL;
-
-console.log('🛒 Shopify:', SHOPIFY_SHOP_URL || 'Not configured');
 
 let shopify = null;
 if (SHOPIFY_API_KEY && SHOPIFY_ACCESS_TOKEN && SHOPIFY_SHOP_URL) {
@@ -24,18 +21,18 @@ if (SHOPIFY_API_KEY && SHOPIFY_ACCESS_TOKEN && SHOPIFY_SHOP_URL) {
   });
 }
 
-// ===== REVIEW STORAGE =====
+console.log('🛒 Shopify:', SHOPIFY_SHOP_URL || 'Not configured');
+
 let allReviews = [];
 let productCache = {};
 
-// ===== FETCH REAL PRODUCT IMAGES FROM SHOPIFY =====
+// ===== FETCH PRODUCTS WITH REAL IMAGES =====
 async function fetchProductsWithImages() {
   if (!shopify) {
-    console.log('⚠️ Shopify not configured, using fallback images');
+    console.log('⚠️ Shopify not configured, using fallback');
     return [
       { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/JPG_Le_Beau_Paradise_Garden.jpg" },
-      { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" },
-      { id: 15841953907065, title: "Acqua di Giò", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Acqua_di_Gio.jpg" }
+      { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" }
     ];
   }
   
@@ -60,7 +57,7 @@ async function fetchProductsWithImages() {
 
 // ===== GENERATE REVIEWS WITH REAL PRODUCT IMAGES =====
 async function generateMockReviews(count = 500) {
-  console.log(`\n📝 Generating ${count} reviews with product images...`);
+  console.log(`\n📝 Generating ${count} reviews...`);
   
   const firstNames = ['Khadija', 'Youssef', 'Fatima', 'Mohamed', 'Aicha', 'Omar', 'Nadia', 'Karim', 'Samira', 'Hassan', 'Zineb', 'Tariq', 'Salma', 'Nisrine', 'Imane', 'Adil', 'Rachid', 'Latifa', 'Mehdi', 'Sofia', 'Hamza', 'Leila'];
   const lastNames = ['El Hachimi', 'Benali', 'Alami', 'Fassi', 'Meknassi', 'Tazi', 'Berrada', 'Lahlou', 'Benjelloun', 'Kabbaj', 'Zniber', 'Mernissi', 'Bennani', 'El Alaoui', 'Benchekroun', 'Slaoui', 'Cherkaoui'];
@@ -73,25 +70,24 @@ async function generateMockReviews(count = 500) {
     'ما شاء الله، سلعة نقية وجودة عالية. الخدمة كانت مزيانة والتوصيل سريع.'
   ];
 
-  // Get real products with images
-  const products = await fetchProductsWithImages();
+  // Fetch real products with their images
+  let products = await fetchProductsWithImages();
   
-  if (products.length === 0) {
-    console.log('⚠️ No products found, using fallback');
-    products.push(
-      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://picsum.photos/seed/1/400/400" },
-      { id: 15841953907064, title: "Lancôme Idôle", image: "https://picsum.photos/seed/2/400/400" }
-    );
+  if (products.length === 0 || !products[0].image) {
+    console.log('⚠️ No product images found, using fallback images');
+    products = [
+      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/JPG_Le_Beau_Paradise_Garden.jpg" },
+      { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" },
+      { id: 15841953907065, title: "Acqua di Giò", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Acqua_di_Gio.jpg" }
+    ];
   }
   
-  console.log(`📦 Using ${products.length} products`);
+  console.log(`📦 Using ${products.length} products with images`);
 
   const reviews = [];
 
   for (let i = 0; i < count; i++) {
     const product = products[Math.floor(Math.random() * products.length)];
-    
-    // Use the product's real image, or a placeholder if null
     const productImage = product.image || `https://picsum.photos/seed/${product.id}/400/400`;
     
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
