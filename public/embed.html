@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NEFHARA Reviews</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; }
+        .header .brand { color: #7c3aed; }
+        .badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 16px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .stat-card .number { font-size: 2rem; font-weight: 700; color: #7c3aed; }
+        .stat-card .label { font-size: 0.85rem; color: #6b7280; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: #7c3aed; color: white; }
+        .btn-primary:hover { background: #6d28d9; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-outline { background: transparent; color: #4b5563; border: 1px solid #d1d5db; }
+        .btn-outline:hover { background: #f3f4f6; }
+        .widget-preview { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .widget-code { background: #1a1a1a; color: #10b981; padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; margin: 10px 0; }
+        .copy-btn { background: #1a1a1a; color: white; border: 1px solid #374151; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
+        .copy-btn:hover { background: #374151; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 8px; display: none; }
+        @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>✨ <span class="brand">NEFHARA</span> Reviews</h1>
+                <span class="badge">v1.0</span>
+            </div>
+            <div>
+                <span id="statusDot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#10b981;margin-right:8px;"></span>
+                <span id="statusText" style="font-size:0.85rem;color:#6b7280;">Connected</span>
+            </div>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="number" id="reviewCount">0</div>
+                <div class="label">Total Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="productCount">0</div>
+                <div class="label">Products with Reviews</div>
+            </div>
+            <div class="stat-card">
+                <div class="number">⭐ 4-5</div>
+                <div class="label">Star Rating Range</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-primary" onclick="generateReviews()">🚀 Generate 500 Reviews</button>
+            <button class="btn btn-success" onclick="getWidgetCode()">📋 Get Widget Code</button>
+            <button class="btn btn-danger" onclick="clearReviews()">🗑️ Clear Reviews</button>
+        </div>
+
+        <div class="widget-preview" id="widgetContainer">
+            <div style="text-align:center;padding:2rem;color:#6b7280;">
+                Click "Get Widget Code" to see the embed code
+            </div>
+        </div>
+
+        <div id="codeContainer" style="display:none;margin-top:20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-weight:600;">📋 Widget Embed Code</span>
+                <button class="copy-btn" onclick="copyCode()">📄 Copy Code</button>
+            </div>
+            <div class="widget-code" id="widgetCode">Loading...</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+
+        async function fetchStats() {
+            try {
+                const res = await fetch(`${API_URL}/api/reviews`);
+                const data = await res.json();
+                document.getElementById('reviewCount').textContent = data.total || 0;
+                const products = new Set(data.reviews?.map(r => r.productId) || []);
+                document.getElementById('productCount').textContent = products.size;
+            } catch (e) {
+                console.error('Error fetching stats:', e);
+            }
+        }
+
+        async function generateReviews() {
+            const btn = event.target;
+            btn.textContent = '⏳ Generating...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_URL}/api/generate-bulk`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country: 'Morocco', count: 500 })
+                });
+                const data = await res.json();
+                showToast(`✅ ${data.totalReviews} reviews generated!`);
+                fetchStats();
+                getWidgetCode();
+            } catch (e) {
+                showToast('❌ Error generating reviews');
+            } finally {
+                btn.textContent = '🚀 Generate 500 Reviews';
+                btn.disabled = false;
+            }
+        }
+
+        async function clearReviews() {
+            if (!confirm('Are you sure you want to clear all reviews?')) return;
+            try {
+                await fetch(`${API_URL}/api/clear-reviews`, { method: 'POST' });
+                showToast('🗑️ All reviews cleared');
+                fetchStats();
+                document.getElementById('widgetContainer').innerHTML = '<div style="text-align:center;padding:2rem;color:#6b7280;">No reviews available</div>';
+                document.getElementById('codeContainer').style.display = 'none';
+            } catch (e) {
+                showToast('❌ Error clearing reviews');
+            }
+        }
+
+        async function getWidgetCode() {
+            try {
+                const res = await fetch(`${API_URL}/api/generate-widget`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId: 'all', productTitle: 'All Products' })
+                });
+                const data = await res.json();
+                document.getElementById('widgetCode').textContent = data.widget;
+                document.getElementById('codeContainer').style.display = 'block';
+                showToast('✅ Widget code generated!');
+            } catch (e) {
+                showToast('❌ Error generating widget code');
+            }
+        }
+
+        function copyCode() {
+            const code = document.getElementById('widgetCode').textContent;
+            navigator.clipboard.writeText(code);
+            showToast('📋 Code copied to clipboard!');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        fetchStats();
+    </script>
+</body>
+</html>
