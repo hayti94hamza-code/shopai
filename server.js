@@ -79,7 +79,6 @@ function generateMockReviews(count = 500) {
   return reviews;
 }
 
-// ===== SHUFFLE FUNCTION =====
 function shuffleArray(array) {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -93,152 +92,105 @@ function shuffleArray(array) {
 
 // Root
 app.get('/', (req, res) => {
-  res.send('✅ NEFHARA Reviews Server is running! Visit <a href="/embed.html">/embed.html</a> for the admin dashboard.');
+  res.send('✅ NEFHARA Reviews Server is running!');
 });
 
 // Dashboard
 app.get('/embed.html', (req, res) => {
   res.send(`<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NEFHARA Reviews - Admin</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; min-height: 100vh; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: white; padding: 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-        .header h1 { font-size: 1.8rem; font-weight: 700; color: #1a1a1a; }
-        .header .brand { color: #7c3aed; }
-        .header .badge { background: #10b981; color: white; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; }
-        .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .stat-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .stat-card .number { font-size: 2rem; font-weight: 700; color: #7c3aed; }
-        .stat-card .label { font-size: 0.85rem; color: #6b7280; }
-        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
-        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-        .btn-primary { background: #7c3aed; color: white; }
-        .btn-primary:hover { background: #6d28d9; }
-        .btn-success { background: #10b981; color: white; }
-        .btn-success:hover { background: #059669; }
-        .btn-danger { background: #ef4444; color: white; }
-        .btn-danger:hover { background: #dc2626; }
-        .widget-preview { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .widget-code { background: #1a1a1a; color: #10b981; padding: 16px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.85rem; overflow-x: auto; margin: 10px 0; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-        .copy-btn { background: #1a1a1a; color: white; border: 1px solid #374151; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
-        .copy-btn:hover { background: #374151; }
-        .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 1000; }
-        @media (max-width: 640px) { .stats { grid-template-columns: 1fr; } .header { flex-direction: column; align-items: flex-start; } }
-    </style>
+<head><title>NEFHARA Reviews</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: #f9fafb; padding: 20px; }
+.container { max-width: 1200px; margin: 0 auto; }
+.header { background: white; padding: 24px; border-radius: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+.header h1 { font-size: 1.8rem; }
+.brand { color: #7c3aed; }
+.badge { background: #10b981; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { background: white; padding: 20px; border-radius: 12px; }
+.stat-card .number { font-size: 2rem; font-weight: 700; color: #7c3aed; }
+.stat-card .label { font-size: 0.85rem; color: #6b7280; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #7c3aed; color: white; }
+.btn-primary:hover { background: #6d28d9; }
+.btn-success { background: #10b981; color: white; }
+.btn-success:hover { background: #059669; }
+.btn-danger { background: #ef4444; color: white; }
+.btn-danger:hover { background: #dc2626; }
+.widget-preview { background: white; border-radius: 12px; padding: 24px; }
+.widget-code { background: #1a1a1a; color: #10b981; padding: 16px; border-radius: 8px; font-family: monospace; font-size: 0.85rem; overflow-x: auto; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+.copy-btn { background: #1a1a1a; color: white; border: 1px solid #374151; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: white; padding: 12px 24px; border-radius: 8px; display: none; z-index: 1000; }
+@media (max-width: 640px) { .stats { grid-template-columns: 1fr; } .header { flex-direction: column; align-items: flex-start; } }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div>
-                <h1>✨ <span class="brand">NEFHARA</span> Reviews</h1>
-                <span class="badge">v1.0</span>
-            </div>
-            <div>
-                <span id="statusText" style="color:#10b981;">✅ Connected</span>
-                <span style="margin-left:12px;color:#6b7280;" id="reviewCount">0 reviews</span>
-            </div>
-        </div>
-        <div class="stats">
-            <div class="stat-card">
-                <div class="number" id="totalReviews">0</div>
-                <div class="label">Total Reviews</div>
-            </div>
-            <div class="stat-card">
-                <div class="number" id="productCount">0</div>
-                <div class="label">Products with Reviews</div>
-            </div>
-            <div class="stat-card">
-                <div class="number">⭐ 4-5</div>
-                <div class="label">Star Rating Range</div>
-            </div>
-        </div>
-        <div class="actions">
-            <button class="btn btn-primary" onclick="generateReviews()">🚀 Generate 500 Reviews</button>
-            <button class="btn btn-success" onclick="getWidgetCode()">📋 Get Widget Code</button>
-            <button class="btn btn-danger" onclick="clearReviews()">🗑️ Clear Reviews</button>
-        </div>
-        <div class="widget-preview" id="widgetContainer">
-            <div style="text-align:center;padding:2rem;color:#6b7280;">Click "Get Widget Code" to see the embed code</div>
-        </div>
-        <div id="codeContainer" style="display:none;margin-top:20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-weight:600;">📋 Widget Embed Code</span>
-                <button class="copy-btn" onclick="copyCode()">📄 Copy Code</button>
-            </div>
-            <div class="widget-code" id="widgetCode">Loading...</div>
-        </div>
-    </div>
-    <div class="toast" id="toast"></div>
-    <script>
-        const API_URL = window.location.origin;
-        async function fetchStats() {
-            try {
-                const res = await fetch(\`\${API_URL}/api/reviews\`);
-                const data = await res.json();
-                document.getElementById('totalReviews').textContent = data.total || 0;
-                const products = new Set(data.reviews?.map(r => r.productId) || []);
-                document.getElementById('productCount').textContent = products.size;
-                document.getElementById('reviewCount').textContent = \`\${data.total || 0} reviews\`;
-            } catch (e) { console.error('Error fetching stats:', e); }
-        }
-        async function generateReviews() {
-            const btn = event.target;
-            btn.textContent = '⏳ Generating...';
-            btn.disabled = true;
-            try {
-                const res = await fetch(\`\${API_URL}/api/generate-bulk\`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ count: 500 })
-                });
-                const data = await res.json();
-                showToast(\`✅ \${data.totalReviews} reviews generated!\`);
-                fetchStats();
-            } catch (e) { showToast('❌ Error generating reviews'); }
-            finally { btn.textContent = '🚀 Generate 500 Reviews'; btn.disabled = false; }
-        }
-        async function clearReviews() {
-            if (!confirm('Are you sure you want to clear all reviews?')) return;
-            try {
-                await fetch(\`\${API_URL}/api/clear-reviews\`, { method: 'POST' });
-                showToast('🗑️ All reviews cleared');
-                fetchStats();
-                document.getElementById('widgetContainer').innerHTML = '<div style="text-align:center;padding:2rem;color:#6b7280;">No reviews available</div>';
-                document.getElementById('codeContainer').style.display = 'none';
-            } catch (e) { showToast('❌ Error clearing reviews'); }
-        }
-        async function getWidgetCode() {
-            try {
-                const res = await fetch(\`\${API_URL}/api/generate-widget\`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ productId: '15841953907062', productTitle: 'JPG Le Beau Paradise Garden' })
-                });
-                const data = await res.json();
-                document.getElementById('widgetCode').textContent = data.widget;
-                document.getElementById('codeContainer').style.display = 'block';
-                showToast('✅ Widget code generated!');
-            } catch (e) { showToast('❌ Error generating widget code'); }
-        }
-        function copyCode() {
-            const code = document.getElementById('widgetCode').textContent;
-            navigator.clipboard.writeText(code);
-            showToast('📋 Code copied to clipboard!');
-        }
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.style.display = 'block';
-            setTimeout(() => { toast.style.display = 'none'; }, 3000);
-        }
-        fetchStats();
-    </script>
+<div class="container">
+<div class="header"><div><h1>✨ <span class="brand">NEFHARA</span> Reviews</h1><span class="badge">v1.0</span></div><div><span id="statusText" style="color:#10b981;">✅ Connected</span> <span id="reviewCount" style="color:#6b7280;">0 reviews</span></div></div>
+<div class="stats"><div class="stat-card"><div class="number" id="totalReviews">0</div><div class="label">Total Reviews</div></div><div class="stat-card"><div class="number" id="productCount">0</div><div class="label">Products</div></div><div class="stat-card"><div class="number">⭐ 4-5</div><div class="label">Star Rating</div></div></div>
+<div class="actions"><button class="btn btn-primary" onclick="generateReviews()">🚀 Generate 500 Reviews</button><button class="btn btn-success" onclick="getWidgetCode()">📋 Get Widget Code</button><button class="btn btn-danger" onclick="clearReviews()">🗑️ Clear Reviews</button></div>
+<div class="widget-preview" id="widgetContainer"><div style="text-align:center;padding:2rem;color:#6b7280;">Click "Get Widget Code" to see the embed code</div></div>
+<div id="codeContainer" style="display:none;margin-top:20px;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-weight:600;">📋 Widget Embed Code</span><button class="copy-btn" onclick="copyCode()">📄 Copy Code</button></div><div class="widget-code" id="widgetCode">Loading...</div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const API_URL = 'https://nefhara-reviews.onrender.com';
+async function fetchStats() {
+  try {
+    const res = await fetch(API_URL + '/api/reviews');
+    const data = await res.json();
+    document.getElementById('totalReviews').textContent = data.total || 0;
+    document.getElementById('productCount').textContent = new Set(data.reviews?.map(r => r.productId) || []).size;
+    document.getElementById('reviewCount').textContent = (data.total || 0) + ' reviews';
+  } catch(e) { console.error('Error fetching stats:', e); }
+}
+async function generateReviews() {
+  const btn = event.target;
+  btn.textContent = '⏳ Generating...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API_URL + '/api/generate-bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ count: 500 }) });
+    const data = await res.json();
+    showToast('✅ ' + data.totalReviews + ' reviews generated!');
+    fetchStats();
+  } catch(e) { showToast('❌ Error generating reviews'); }
+  finally { btn.textContent = '🚀 Generate 500 Reviews'; btn.disabled = false; }
+}
+async function clearReviews() {
+  if (!confirm('Are you sure?')) return;
+  try {
+    await fetch(API_URL + '/api/clear-reviews', { method: 'POST' });
+    showToast('🗑️ All reviews cleared');
+    fetchStats();
+    document.getElementById('widgetContainer').innerHTML = '<div style="text-align:center;padding:2rem;color:#6b7280;">No reviews available</div>';
+    document.getElementById('codeContainer').style.display = 'none';
+  } catch(e) { showToast('❌ Error clearing reviews'); }
+}
+async function getWidgetCode() {
+  try {
+    const res = await fetch(API_URL + '/api/generate-widget', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ productId: '15841953907062', productTitle: 'JPG Le Beau Paradise Garden' }) });
+    const data = await res.json();
+    document.getElementById('widgetCode').textContent = data.widget;
+    document.getElementById('codeContainer').style.display = 'block';
+    showToast('✅ Widget code generated!');
+  } catch(e) { showToast('❌ Error generating widget code'); }
+}
+function copyCode() {
+  const code = document.getElementById('widgetCode').textContent;
+  navigator.clipboard.writeText(code);
+  showToast('📋 Code copied to clipboard!');
+}
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+fetchStats();
+</script>
 </body>
 </html>`);
 });
@@ -270,40 +222,117 @@ app.get('/widget.css', (req, res) => {
   `);
 });
 
-// ===== WIDGET JS =====
+// ===== WIDGET JS (FIXED - uses the correct backend URL) =====
 app.get('/widget.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
     (function() {
-      const API_URL = window.location.origin;
-      function renderStars(rating) { let html = ''; for (let i = 1; i <= 5; i++) { html += i <= rating ? '★' : '☆'; } return html; }
+      // Use the Render backend URL directly
+      const API_URL = 'https://nefhara-reviews.onrender.com';
+      console.log('✅ NEFHARA Widget loaded, API_URL:', API_URL);
+      
+      function renderStars(rating) {
+        let html = '';
+        for (let i = 1; i <= 5; i++) {
+          html += i <= rating ? '★' : '☆';
+        }
+        return html;
+      }
+
       async function loadReviews() {
         const container = document.getElementById('nefhara-reviews-widget');
-        if (!container) return;
+        if (!container) {
+          console.error('❌ Container not found');
+          return;
+        }
+        
         const productId = container.dataset.product || window.NEFHARA_PRODUCT_ID || '15841953907062';
-        container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:1.2rem;color:#6b7280;">Loading reviews...</div>';
+        console.log('📡 Loading reviews for product:', productId);
+        
+        container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:1.2rem;color:#6b7280;">⏳ Loading reviews...</div>';
+
         try {
-          const response = await fetch(\`\${API_URL}/api/reviews/\${productId}?count=20\`);
+          const url = \`\${API_URL}/api/reviews/\${productId}?count=20\`;
+          console.log('📡 Fetching:', url);
+          
+          const response = await fetch(url);
+          console.log('📡 Status:', response.status);
+          
           if (!response.ok) throw new Error(\`HTTP error! status: \${response.status}\`);
+          
           const data = await response.json();
+          console.log('📡 Data received:', data.displayed, 'reviews');
+
           if (!data.success || data.reviews.length === 0) {
             container.innerHTML = '<div class="nefhara-review-widget"><div style="text-align:center;padding:2rem;color:#6b7280;font-size:1.2rem;">✨ No reviews available.</div></div>';
             return;
           }
+
           const reviews = data.reviews;
-          let html = '<div class="nefhara-review-widget"><div class="nefhara-review-header"><h2>✨ Customer Reviews</h2><div><span class="badge">' + reviews.length + ' Reviews</span><button onclick="loadReviews()" class="nefhara-refresh-button" style="margin-left:10px;">↻ Refresh</button></div></div><div class="nefhara-review-grid">';
+          
+          let html = \`
+            <div class="nefhara-review-widget">
+              <div class="nefhara-review-header">
+                <h2>✨ Customer Reviews</h2>
+                <div>
+                  <span class="badge">\${reviews.length} Reviews</span>
+                  <button onclick="loadReviews()" class="nefhara-refresh-button" style="margin-left:10px;">↻ Refresh</button>
+                </div>
+              </div>
+              <div class="nefhara-review-grid">
+          \`;
+
           reviews.forEach(review => {
             const productImage = review.productImage || '';
-            html += '<div class="nefhara-review-card"><div class="nefhara-review-card-header"><img class="nefhara-review-avatar" src="' + review.customer.avatar + '" alt="' + review.customer.name + '"><div><div class="nefhara-review-customer-name">' + review.customer.name + (review.customer.verified ? '<span class="nefhara-verified-badge">✓ Verified</span>' : '') + '</div><div class="nefhara-review-stars">' + renderStars(review.rating) + '</div></div></div><div style="font-weight:700;font-size:1.1rem;margin:0.25rem 0;">' + review.title + '</div><div class="nefhara-review-text">' + review.text + '</div><div class="nefhara-product-tag">📦 ' + (review.productTitle || 'Product') + '</div>' + (productImage ? '<div class="nefhara-review-product-image"><img src="' + productImage + '" alt="Product photo" loading="lazy" /></div>' : '') + '<div class="nefhara-review-footer"><span>' + review.date + '</span><span>👍 ' + review.helpful + ' helpful</span></div></div>';
+            html += \`
+              <div class="nefhara-review-card">
+                <div class="nefhara-review-card-header">
+                  <img class="nefhara-review-avatar" src="\${review.customer.avatar}" alt="\${review.customer.name}">
+                  <div>
+                    <div class="nefhara-review-customer-name">
+                      \${review.customer.name}
+                      \${review.customer.verified ? '<span class="nefhara-verified-badge">✓ Verified</span>' : ''}
+                    </div>
+                    <div class="nefhara-review-stars">\${renderStars(review.rating)}</div>
+                  </div>
+                </div>
+                <div style="font-weight:700;font-size:1.1rem;margin:0.25rem 0;">\${review.title}</div>
+                <div class="nefhara-review-text">\${review.text}</div>
+                <div class="nefhara-product-tag">📦 \${review.productTitle || 'Product'}</div>
+                \${productImage ? '<div class="nefhara-review-product-image"><img src="' + productImage + '" alt="Product photo" loading="lazy" /></div>' : ''}
+                <div class="nefhara-review-footer">
+                  <span>\${review.date}</span>
+                  <span>👍 \${review.helpful} helpful</span>
+                </div>
+              </div>
+            \`;
           });
-          html += '</div></div>';
+
+          html += \`</div></div>\`;
           container.innerHTML = html;
+          console.log('✅ Reviews loaded successfully!');
+
         } catch (error) {
-          console.error('Error loading reviews:', error);
-          container.innerHTML = '<div class="nefhara-review-widget"><div style="text-align:center;padding:2rem;color:#ef4444;font-size:1.2rem;">❌ Error loading reviews: ' + error.message + '<br><br><button onclick="loadReviews()" class="nefhara-refresh-button" style="margin-top:10px;">↻ Try Again</button></div></div>';
+          console.error('❌ Error loading reviews:', error);
+          container.innerHTML = \`
+            <div class="nefhara-review-widget">
+              <div style="text-align:center;padding:2rem;color:#ef4444;font-size:1.2rem;">
+                ❌ Error: \${error.message}
+                <br><br>
+                <button onclick="loadReviews()" class="nefhara-refresh-button" style="margin-top:10px;">↻ Try Again</button>
+              </div>
+            </div>
+          \`;
         }
       }
-      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', loadReviews); } else { setTimeout(loadReviews, 100); }
+
+      // Load on DOM ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadReviews);
+      } else {
+        setTimeout(loadReviews, 100);
+      }
+
       window.loadReviews = loadReviews;
     })();
   `);
@@ -329,7 +358,7 @@ app.post('/api/generate-bulk', (req, res) => {
   res.json({ success: true, totalReviews: allReviews.length });
 });
 
-// Get reviews for a specific product - FIXED ROUTE
+// Get reviews for a specific product
 app.get('/api/reviews/:productId', (req, res) => {
   try {
     const productId = req.params.productId;
@@ -351,6 +380,7 @@ app.get('/api/reviews/:productId', (req, res) => {
       reviews: selected
     });
   } catch (error) {
+    console.error('❌ Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -363,7 +393,13 @@ app.get('/api/reviews', (req, res) => {
 // Get products from Shopify
 app.get('/api/products', async (req, res) => {
   try {
-    if (!shopify) { return res.status(500).json({ error: 'Shopify not configured' }); }
+    if (!shopify) { 
+      return res.json([
+        { id: 15841953907062, title: "JPG Le Beau Paradise Garden" },
+        { id: 15841953907063, title: "Armani Stronger With You" },
+        { id: 15841953907064, title: "Lancôme Idôle" }
+      ]);
+    }
     const products = await shopify.product.list({ limit: 250, fields: 'id,title,images' });
     res.json(products);
   } catch (error) {
