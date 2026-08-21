@@ -474,7 +474,7 @@ app.get('/widget.css', (req, res) => {
   `);
 });
 
-// ===== WIDGET JS ROUTE =====
+// ===== WIDGET JS ROUTE (UPDATED WITH BETTER ERROR HANDLING) =====
 app.get('/widget.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
@@ -489,23 +489,49 @@ app.get('/widget.js', (req, res) => {
         return html;
       }
 
+      function getProductId() {
+        const container = document.getElementById('nefhara-reviews-widget');
+        if (!container) return null;
+        const productId = container.dataset.product || window.NEFHARA_PRODUCT_ID || 'all';
+        return productId;
+      }
+
       async function loadReviews() {
         const container = document.getElementById('nefhara-reviews-widget');
-        if (!container) return;
+        if (!container) {
+          console.error('Widget container not found');
+          return;
+        }
 
-        const productId = container.dataset.product || window.NEFHARA_PRODUCT_ID || 'all';
+        const productId = getProductId();
+        if (!productId) {
+          container.innerHTML = '<div style="text-align:center;padding:2rem;color:#ef4444;font-size:1.2rem;">❌ Product ID not found</div>';
+          return;
+        }
 
-        container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:1.2rem;color:#6b7280;">Loading reviews...</div>';
+        container.innerHTML = '<div style="text-align:center;padding:2rem;font-size:1.2rem;color:#6b7280;">⏳ Loading reviews...</div>';
 
         try {
-          const response = await fetch(\`\${API_URL}/api/reviews/\${productId}?count=20\`);
+          const url = \`\${API_URL}/api/reviews/\${productId}?count=20\`;
+          console.log('📡 Fetching reviews from:', url);
+          
+          const response = await fetch(url);
+          
+          if (!response.ok) {
+            throw new Error(\`HTTP error! status: \${response.status}\`);
+          }
+          
           const data = await response.json();
 
-          if (!data.success || data.reviews.length === 0) {
+          if (!data.success) {
+            throw new Error('API returned error');
+          }
+
+          if (!data.reviews || data.reviews.length === 0) {
             container.innerHTML = \`
               <div class="nefhara-review-widget">
                 <div style="text-align:center;padding:2rem;color:#6b7280;font-size:1.2rem;">
-                  ✨ No reviews yet. Generate reviews from the admin panel.
+                  ✨ No reviews available for this product.
                 </div>
               </div>
             \`;
@@ -554,25 +580,32 @@ app.get('/widget.js', (req, res) => {
 
           html += \`</div></div>\`;
           container.innerHTML = html;
+          
+          console.log('✅ Reviews loaded successfully!');
 
         } catch (error) {
-          console.error('Error loading reviews:', error);
+          console.error('❌ Error loading reviews:', error);
           container.innerHTML = \`
             <div class="nefhara-review-widget">
               <div style="text-align:center;padding:2rem;color:#ef4444;font-size:1.2rem;">
-                ❌ Error loading reviews.
+                ❌ Error loading reviews: \${error.message}
+                <br><br>
+                <button onclick="loadReviews()" class="nefhara-refresh-button" style="margin-top:10px;">↻ Try Again</button>
               </div>
             </div>
           \`;
         }
       }
 
+      // Load reviews when DOM is ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', loadReviews);
       } else {
-        loadReviews();
+        // DOM already loaded, load immediately
+        setTimeout(loadReviews, 100);
       }
 
+      // Make loadReviews available globally for the refresh button
       window.loadReviews = loadReviews;
     })();
   `);
