@@ -26,11 +26,38 @@ if (SHOPIFY_API_KEY && SHOPIFY_ACCESS_TOKEN && SHOPIFY_SHOP_URL) {
 
 // ===== REVIEW STORAGE =====
 let allReviews = [];
+let productCache = {}; // Cache product images
 
-// ===== GENERATE MOCK REVIEWS =====
-function generateMockReviews(count = 500) {
-  const firstNames = ['Khadija', 'Youssef', 'Fatima', 'Mohamed', 'Aicha', 'Omar', 'Nadia', 'Karim', 'Samira', 'Hassan', 'Zineb', 'Tariq', 'Salma', 'Nisrine', 'Imane', 'Adil'];
-  const lastNames = ['El Hachimi', 'Benali', 'Alami', 'Fassi', 'Meknassi', 'Tazi', 'Berrada', 'Lahlou', 'Benjelloun', 'Kabbaj', 'Zniber', 'Mernissi', 'Bennani'];
+// ===== FETCH PRODUCT IMAGES FROM SHOPIFY =====
+async function getProductImage(productId) {
+  try {
+    // Check cache first
+    if (productCache[productId]) {
+      return productCache[productId];
+    }
+    
+    if (!shopify) {
+      return null;
+    }
+    
+    const product = await shopify.product.get(productId);
+    const image = product.images && product.images.length > 0 ? product.images[0].src : null;
+    
+    // Cache the image
+    productCache[productId] = image;
+    return image;
+  } catch (error) {
+    console.error('Error fetching product image:', error.message);
+    return null;
+  }
+}
+
+// ===== GENERATE MOCK REVIEWS WITH REAL PRODUCT IMAGES =====
+async function generateMockReviews(count = 500) {
+  console.log(`\n📝 Generating ${count} reviews...`);
+  
+  const firstNames = ['Khadija', 'Youssef', 'Fatima', 'Mohamed', 'Aicha', 'Omar', 'Nadia', 'Karim', 'Samira', 'Hassan', 'Zineb', 'Tariq', 'Salma', 'Nisrine', 'Imane', 'Adil', 'Rachid', 'Latifa', 'Mehdi', 'Sofia', 'Hamza', 'Leila'];
+  const lastNames = ['El Hachimi', 'Benali', 'Alami', 'Fassi', 'Meknassi', 'Tazi', 'Berrada', 'Lahlou', 'Benjelloun', 'Kabbaj', 'Zniber', 'Mernissi', 'Bennani', 'El Alaoui', 'Benchekroun', 'Slaoui', 'Cherkaoui'];
   const expressions = ['تبارك الله سلعة نقية', 'ما شاء الله', 'الحمد لله', 'تبارك الرحمان', 'شكرا بزاف', 'بزاف عجبني', 'مزيان بزاف'];
   const texts = [
     'هاد المنتج رائع بزاف! جودة عالية وخدمة مزيانة. ننصح بيه لجميع الأصحاب.',
@@ -41,15 +68,42 @@ function generateMockReviews(count = 500) {
   ];
 
   const reviews = [];
-  const productIds = [15841953907062, 15841953907063, 15841953907064, 15841953907065];
-  const productTitles = [
-    'JPG Le Beau Paradise Garden',
-    'Armani Stronger With You',
-    'Lancôme Idôle',
-    'Acqua di Giò'
-  ];
+  
+  // Get products from Shopify
+  let products = [];
+  try {
+    if (shopify) {
+      const shopifyProducts = await shopify.product.list({
+        limit: 250,
+        fields: 'id,title,images'
+      });
+      products = shopifyProducts.map(p => ({
+        id: p.id,
+        title: p.title,
+        image: p.images && p.images.length > 0 ? p.images[0].src : null
+      }));
+      console.log(`🛒 Found ${products.length} products from Shopify`);
+    } else {
+      // Fallback mock products
+      products = [
+        { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/JPG_Le_Beau_Paradise_Garden.jpg" },
+        { id: 15841953907063, title: "Armani Stronger With You", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Armani_Stronger_With_You.jpg" },
+        { id: 15841953907064, title: "Lancôme Idôle", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Lancome_Idole.jpg" },
+        { id: 15841953907065, title: "Acqua di Giò", image: "https://cdn.shopify.com/s/files/1/0863/3369/8355/files/Acqua_di_Gio.jpg" }
+      ];
+      console.log(`📦 Using ${products.length} mock products`);
+    }
+  } catch (error) {
+    console.error('❌ Error fetching products:', error.message);
+    products = [
+      { id: 15841953907062, title: "JPG Le Beau Paradise Garden", image: null },
+      { id: 15841953907063, title: "Armani Stronger With You", image: null }
+    ];
+  }
 
+  // Generate reviews
   for (let i = 0; i < count; i++) {
+    const product = products[Math.floor(Math.random() * products.length)];
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     const fullName = `${firstName} ${lastName}`;
@@ -57,7 +111,9 @@ function generateMockReviews(count = 500) {
     const stars = Math.random() < 0.7 ? 5 : 4;
     const text = texts[Math.floor(Math.random() * texts.length)];
     const expression = expressions[Math.floor(Math.random() * expressions.length)];
-    const productIndex = Math.floor(Math.random() * productIds.length);
+    
+    // Use the product's actual image
+    const productImage = product.image || `https://picsum.photos/seed/${i + 1}/400/400`;
     
     reviews.push({
       id: `review_${Date.now()}_${i}`,
@@ -70,12 +126,17 @@ function generateMockReviews(count = 500) {
       title: stars === 5 ? '⭐ Excellent!' : '✨ Very Good!',
       text: `${text} ${expression}`,
       date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      productImage: `https://picsum.photos/seed/${i + 1}/400/400`,
+      productImage: productImage, // This is the product's actual image
       helpful: Math.floor(Math.random() * 40) + 5,
-      productId: productIds[productIndex],
-      productTitle: productTitles[productIndex]
+      productId: product.id,
+      productTitle: product.title
     });
+    
+    if ((i + 1) % 100 === 0 || i === count - 1) {
+      console.log(`   ✅ Generated ${i + 1}/${count} reviews`);
+    }
   }
+  
   return reviews;
 }
 
@@ -222,14 +283,13 @@ app.get('/widget.css', (req, res) => {
   `);
 });
 
-// ===== WIDGET JS (FIXED - uses the correct backend URL) =====
+// ===== WIDGET JS =====
 app.get('/widget.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
     (function() {
-      // Use the Render backend URL directly
       const API_URL = 'https://nefhara-reviews.onrender.com';
-      console.log('✅ NEFHARA Widget loaded, API_URL:', API_URL);
+      console.log('✅ NEFHARA Widget loaded');
       
       function renderStars(rating) {
         let html = '';
@@ -326,7 +386,6 @@ app.get('/widget.js', (req, res) => {
         }
       }
 
-      // Load on DOM ready
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', loadReviews);
       } else {
@@ -352,10 +411,15 @@ app.post('/api/clear-reviews', (req, res) => {
 });
 
 // Generate bulk reviews
-app.post('/api/generate-bulk', (req, res) => {
-  const count = req.body.count || 500;
-  allReviews = generateMockReviews(count);
-  res.json({ success: true, totalReviews: allReviews.length });
+app.post('/api/generate-bulk', async (req, res) => {
+  try {
+    const count = req.body.count || 500;
+    allReviews = await generateMockReviews(count);
+    res.json({ success: true, totalReviews: allReviews.length });
+  } catch (error) {
+    console.error('❌ Error generating reviews:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Get reviews for a specific product
@@ -396,8 +460,7 @@ app.get('/api/products', async (req, res) => {
     if (!shopify) { 
       return res.json([
         { id: 15841953907062, title: "JPG Le Beau Paradise Garden" },
-        { id: 15841953907063, title: "Armani Stronger With You" },
-        { id: 15841953907064, title: "Lancôme Idôle" }
+        { id: 15841953907063, title: "Armani Stronger With You" }
       ]);
     }
     const products = await shopify.product.list({ limit: 250, fields: 'id,title,images' });
