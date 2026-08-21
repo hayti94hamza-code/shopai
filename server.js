@@ -10,13 +10,62 @@ const PORT = process.env.PORT || 5001;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public')); // Serve static files from 'public' folder
+app.use(express.static('public'));
 
 // Shopify credentials
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY;
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET;
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const SHOPIFY_SHOP_URL = process.env.SHOPIFY_SHOP_URL;
+
+// ===== ROOT ROUTE =====
+app.get('/', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>NEFHARA Reviews</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px 20px; background: #f9fafb; color: #1a1a1a; }
+        .card { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .brand { color: #7c3aed; }
+        .status { display: inline-block; background: #10b981; color: white; padding: 4px 16px; border-radius: 20px; font-size: 0.85rem; margin-bottom: 1.5rem; }
+        .btn { display: inline-block; background: #7c3aed; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 8px; }
+        .btn:hover { background: #6d28d9; }
+        .btn-outline { background: transparent; color: #4b5563; border: 1px solid #d1d5db; }
+        .btn-outline:hover { background: #f3f4f6; }
+        .features { text-align: left; margin: 24px 0; padding: 0; list-style: none; }
+        .features li { padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .features li:last-child { border-bottom: none; }
+        .emoji { margin-right: 8px; }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>✨ <span class="brand">NEFHARA</span> Reviews</h1>
+        <div class="status">✅ Live</div>
+        <p style="color: #6b7280; font-size: 1.1rem;">
+          AI-powered customer reviews for your Shopify store
+        </p>
+        <div>
+          <a href="/embed.html" class="btn">📊 Open Dashboard</a>
+          <a href="https://github.com/hayti94hamza-code/shopai" class="btn btn-outline">💻 View Code</a>
+        </div>
+        <ul class="features">
+          <li><span class="emoji">⭐</span> 500+ AI-generated reviews</li>
+          <li><span class="emoji">🎲</span> 20 random reviews per product page</li>
+          <li><span class="emoji">🇲🇦</span> Moroccan names + Arabic script</li>
+          <li><span class="emoji">📸</span> Product images included</li>
+        </ul>
+        <p style="color: #9ca3af; font-size: 0.85rem; margin-top: 1.5rem;">
+          © 2026 NEFHARA • Made with ❤️
+        </p>
+      </div>
+    </body>
+    </html>
+  `);
+});
 
 // Initialize Shopify
 const shopify = new Shopify({
@@ -150,7 +199,7 @@ function shuffleArray(array) {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', reviews: allReviews.length });
+  res.json({ status: 'OK', reviews: allReviews.length, timestamp: new Date().toISOString() });
 });
 
 // Clear reviews
@@ -170,6 +219,7 @@ app.post('/api/generate-bulk', async (req, res) => {
       message: `Generated ${allReviews.length} reviews`
     });
   } catch (error) {
+    console.error('❌ Generate error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -235,8 +285,8 @@ app.post('/api/generate-widget', (req, res) => {
   const widgetCode = `
 <!-- NEFHARA AI Reviews Widget -->
 <div id="nefhara-reviews-widget" data-product="${productId || ''}"></div>
-<link rel="stylesheet" href="http://localhost:${PORT}/widget.css" />
-<script src="http://localhost:${PORT}/widget.js" defer></script>
+<link rel="stylesheet" href="https://nefahara-reviews.onrender.com/widget.css" />
+<script src="https://nefahara-reviews.onrender.com/widget.js" defer></script>
 <script>
   window.NEFHARA_PRODUCT_ID = "${productId || ''}";
   window.NEFHARA_PRODUCT_TITLE = "${productTitle || ''}";
@@ -389,7 +439,7 @@ app.get('/widget.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
     (function() {
-      const API_URL = 'http://localhost:5001';
+      const API_URL = 'https://nefahara-reviews.onrender.com';
       
       function renderStars(rating) {
         let html = '';
@@ -491,11 +541,6 @@ app.get('/widget.js', (req, res) => {
 // Serve the embed.html page
 app.get('/embed.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'embed.html'));
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('NEFHARA Reviews App - Visit /embed.html for the admin dashboard');
 });
 
 app.listen(PORT, () => {
